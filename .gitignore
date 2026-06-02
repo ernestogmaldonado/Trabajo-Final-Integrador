@@ -7,3 +7,5 @@ dist/
 .vscode/
 coverage/
 postgres_data/
+logs/
+.pm2/
