@@ -10,6 +10,7 @@ import { RouterLink, RouterOutlet } from '@angular/router';
       <b>Gestion de Proyectos</b> - {{ user }}
       <a routerLink="/proyectos">Proyectos</a>
       <a routerLink="/clientes">Clientes</a>
+      <a routerLink="/historial">Historial</a>
       <button (click)="salir()">Salir</button>
     </header>
     <main>
@@ -42,6 +43,7 @@ export class LayoutComponent {
   salir() {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('role');
     location.href = '/login';
   }
 }

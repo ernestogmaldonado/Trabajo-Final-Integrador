@@ -16,7 +16,7 @@ import { ApiService } from './api.service';
         <p class="error">{{ error }}</p>
       }
       <button (click)="entrar()">Entrar</button>
-      <p><small>admin / admin123</small></p>
+      <p><small>admin / admin123 (o usuario / usuario123)</small></p>
     </div>
   `,
   styles: [
@@ -58,6 +58,7 @@ export class LoginComponent {
       next: (res) => {
         localStorage.setItem('token', res.accessToken);
         localStorage.setItem('user', res.user.username);
+        localStorage.setItem('role', res.user.role);
         this.router.navigate(['/proyectos']);
       },
       error: () => {

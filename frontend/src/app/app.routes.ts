@@ -1,6 +1,7 @@
 import { inject } from '@angular/core';
 import { Routes, Router } from '@angular/router';
 import { ClientesComponent } from './clientes.component';
+import { HistorialComponent } from './historial.component';
 import { LayoutComponent } from './layout.component';
 import { LoginComponent } from './login.component';
 import { ProyectoDetalleComponent } from './proyecto-detalle.component';
@@ -27,6 +28,7 @@ export const routes: Routes = [
       { path: 'proyectos/:id/editar', component: ProyectoFormComponent },
       { path: 'proyectos/:id', component: ProyectoDetalleComponent },
       { path: 'clientes', component: ClientesComponent },
+      { path: 'historial', component: HistorialComponent },
     ],
   },
 ];

@@ -21,7 +21,9 @@ import { ApiService } from './api.service';
         <select [(ngModel)]="estadoNueva">
           <option>PENDIENTE</option>
           <option>FINALIZADO</option>
-          <option>BAJA</option>
+          @if (esAdmin) {
+            <option>BAJA</option>
+          }
         </select>
         <button (click)="agregarTarea()">Agregar</button>
       </p>
@@ -39,7 +41,9 @@ import { ApiService } from './api.service';
                 <select [(ngModel)]="editEstado">
                   <option>PENDIENTE</option>
                   <option>FINALIZADO</option>
-                  <option>BAJA</option>
+                  @if (esAdmin) {
+                    <option>BAJA</option>
+                  }
                 </select>
               </td>
               <td>
@@ -51,7 +55,9 @@ import { ApiService } from './api.service';
               <td>{{ t.status }}</td>
               <td>
                 <button (click)="empezarEditar(t)">Editar</button>
-                <button (click)="borrarTarea(t.id)">Borrar</button>
+                @if (esAdmin) {
+                  <button (click)="borrarTarea(t.id)">Borrar</button>
+                }
               </td>
             }
           </tr>
@@ -64,6 +70,7 @@ import { ApiService } from './api.service';
 })
 export class ProyectoDetalleComponent implements OnInit {
   proyecto: any = null;
+  esAdmin = false;
   projectId = 0;
   tareaNueva = '';
   estadoNueva = 'PENDIENTE';
@@ -78,6 +85,7 @@ export class ProyectoDetalleComponent implements OnInit {
 
   ngOnInit() {
     this.projectId = Number(this.route.snapshot.paramMap.get('id'));
+    this.esAdmin = this.api.esAdmin();
     this.cargar();
   }
 

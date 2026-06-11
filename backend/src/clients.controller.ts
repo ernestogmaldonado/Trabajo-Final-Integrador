@@ -1,5 +1,7 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
 import { ClientsService } from './clients.service';
+import type { BusquedaClientes } from './clients.service';
+import { armarCsv } from './csv';
 import { JwtGuard } from './jwt.guard';
 
 @Controller('clients')
@@ -8,8 +10,8 @@ export class ClientsController {
   constructor(private svc: ClientsService) {}
 
   @Get()
-  listar() {
-    return this.svc.getAll();
+  listar(@Query() query: BusquedaClientes) {
+    return this.svc.buscar(query);
   }
 
   @Get('active')
@@ -17,13 +19,29 @@ export class ClientsController {
     return this.svc.getActivos();
   }
 
+  @Get('export')
+  async exportar(@Query() query: BusquedaClientes, @Res() res: any) {
+    const lista = await this.svc.exportar(query);
+    const csv = armarCsv(
+      ['ID', 'Nombre', 'Estado'],
+      lista.map((c) => [c.id, c.name, c.status]),
+    );
+    res.header('Content-Type', 'text/csv; charset=utf-8');
+    res.header('Content-Disposition', 'attachment; filename=clientes.csv');
+    res.send(csv);
+  }
+
   @Post()
-  crear(@Body() body: { name: string; status?: string }) {
-    return this.svc.crear(body.name, body.status);
+  crear(@Body() body: { name: string; status?: string }, @Req() req: any) {
+    return this.svc.crear(body.name, body.status, req.user.username);
   }
 
   @Patch(':id')
-  editar(@Param('id') id: string, @Body() body: { name?: string; status?: string }) {
-    return this.svc.actualizar(Number(id), body);
+  editar(
+    @Param('id') id: string,
+    @Body() body: { name?: string; status?: string },
+    @Req() req: any,
+  ) {
+    return this.svc.actualizar(Number(id), body, req.user.username);
   }
 }

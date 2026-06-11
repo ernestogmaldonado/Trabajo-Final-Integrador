@@ -1,9 +1,19 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { ILike, Repository } from 'typeorm';
 import { Client } from './entities/client.entity';
 import { Project } from './entities/project.entity';
 import { Task } from './entities/task.entity';
+import { HistoryService } from './history.service';
+
+export interface BusquedaProyectos {
+  name?: string;
+  status?: string;
+  sort?: string;
+  dir?: string;
+  page?: string;
+  limit?: string;
+}
 
 @Injectable()
 export class ProjectsService {
@@ -14,10 +24,43 @@ export class ProjectsService {
     private clientes: Repository<Client>,
     @InjectRepository(Task)
     private tareas: Repository<Task>,
+    private historial: HistoryService,
   ) {}
 
-  getAll() {
-    return this.proyectos.find({ relations: { client: true }, order: { name: 'ASC' } });
+  private armarWhere(query: BusquedaProyectos) {
+    const where: any = {};
+    if (query.name) where.name = ILike('%' + query.name + '%');
+    if (query.status) where.status = query.status;
+    return where;
+  }
+
+  private armarOrden(query: BusquedaProyectos) {
+    const campos = ['id', 'name', 'status'];
+    const sort = campos.includes(query.sort || '') ? query.sort! : 'name';
+    const dir = query.dir === 'DESC' ? 'DESC' : 'ASC';
+    return { [sort]: dir };
+  }
+
+  async buscar(query: BusquedaProyectos) {
+    const page = Number(query.page) || 1;
+    const limit = Number(query.limit) || 10;
+
+    const [data, total] = await this.proyectos.findAndCount({
+      where: this.armarWhere(query),
+      relations: { client: true },
+      order: this.armarOrden(query),
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+    return { data, total };
+  }
+
+  exportar(query: BusquedaProyectos) {
+    return this.proyectos.find({
+      where: this.armarWhere(query),
+      relations: { client: true },
+      order: this.armarOrden(query),
+    });
   }
 
   async getById(id: number) {
@@ -29,45 +72,83 @@ export class ProjectsService {
     return p;
   }
 
-  async crear(body: { name: string; status?: string; clientId?: number | null }) {
+  async crear(body: { name: string; status?: string; clientId?: number | null }, username: string) {
     const clientId = await this.buscarCliente(body.clientId);
-    return this.proyectos.save({
+    const p = await this.proyectos.save({
       name: body.name,
       status: body.status || 'ACTIVO',
       clientId,
     });
+    await this.historial.registrar('PROYECTO', p.id, 'ALTA', `Alta de proyecto "${p.name}"`, username);
+    return p;
   }
 
   async actualizar(
     id: number,
     body: { name?: string; status?: string; clientId?: number | null },
+    username: string,
   ) {
     const p = await this.getById(id);
-    if (body.name) p.name = body.name;
-    if (body.status) p.status = body.status;
-    if (body.clientId !== undefined) {
-      p.clientId = await this.buscarCliente(body.clientId);
+
+    const cambios: string[] = [];
+    if (body.name && body.name !== p.name) {
+      cambios.push(`nombre "${p.name}" -> "${body.name}"`);
+      p.name = body.name;
     }
-    return this.proyectos.save(p);
+    if (body.status && body.status !== p.status) {
+      cambios.push(`estado ${p.status} -> ${body.status}`);
+      p.status = body.status;
+    }
+    if (body.clientId !== undefined) {
+      const nuevo = await this.buscarCliente(body.clientId);
+      if (nuevo !== p.clientId) {
+        cambios.push(`cliente ${p.clientId || 'interno'} -> ${nuevo || 'interno'}`);
+        p.clientId = nuevo;
+      }
+    }
+
+    const guardado = await this.proyectos.save(p);
+    if (cambios.length > 0) {
+      const accion = body.status === 'BAJA' ? 'BAJA' : 'MODIFICACION';
+      await this.historial.registrar('PROYECTO', id, accion, cambios.join(', '), username);
+    }
+    return guardado;
   }
 
-  async crearTarea(projectId: number, description: string, status = 'PENDIENTE') {
+  async crearTarea(projectId: number, description: string, status = 'PENDIENTE', username: string) {
     await this.getById(projectId);
-    return this.tareas.save({ projectId, description, status });
+    const t = await this.tareas.save({ projectId, description, status });
+    await this.historial.registrar('TAREA', t.id, 'ALTA', `Alta de tarea "${t.description}"`, username);
+    return t;
   }
 
-  async editarTarea(id: number, data: { description?: string; status?: string }) {
+  async editarTarea(id: number, data: { description?: string; status?: string }, username: string) {
     const t = await this.tareas.findOne({ where: { id } });
     if (!t) throw new NotFoundException('Tarea no encontrada');
-    if (data.description) t.description = data.description;
-    if (data.status) t.status = data.status;
-    return this.tareas.save(t);
+
+    const cambios: string[] = [];
+    if (data.description && data.description !== t.description) {
+      cambios.push(`descripcion "${t.description}" -> "${data.description}"`);
+      t.description = data.description;
+    }
+    if (data.status && data.status !== t.status) {
+      cambios.push(`estado ${t.status} -> ${data.status}`);
+      t.status = data.status;
+    }
+
+    const guardado = await this.tareas.save(t);
+    if (cambios.length > 0) {
+      const accion = data.status === 'BAJA' ? 'BAJA' : 'MODIFICACION';
+      await this.historial.registrar('TAREA', id, accion, cambios.join(', '), username);
+    }
+    return guardado;
   }
 
-  async borrarTarea(id: number) {
+  async borrarTarea(id: number, username: string) {
     const t = await this.tareas.findOne({ where: { id } });
     if (!t) throw new NotFoundException('Tarea no encontrada');
     await this.tareas.remove(t);
+    await this.historial.registrar('TAREA', id, 'ELIMINACION', `Se borro la tarea "${t.description}"`, username);
     return { ok: true };
   }
 

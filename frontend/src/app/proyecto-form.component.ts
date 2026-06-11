@@ -15,7 +15,9 @@ import { ApiService } from './api.service';
       <select [(ngModel)]="status">
         <option>ACTIVO</option>
         <option>FINALIZADO</option>
-        <option>BAJA</option>
+        @if (esAdmin) {
+          <option>BAJA</option>
+        }
       </select>
     </p>
     <p>
@@ -38,6 +40,7 @@ export class ProyectoFormComponent implements OnInit {
   id = 0;
   name = '';
   status = 'ACTIVO';
+  esAdmin = false;
   clientId: any = '';
   clientes: any[] = [];
   error = '';
@@ -49,6 +52,7 @@ export class ProyectoFormComponent implements OnInit {
   ) {}
 
   ngOnInit() {
+    this.esAdmin = this.api.esAdmin();
     this.api.getClientesActivos().subscribe((c) => (this.clientes = c));
 
     const param = this.route.snapshot.paramMap.get('id');

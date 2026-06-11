@@ -13,4 +13,8 @@ export class User {
 
   @Column({ default: 'ACTIVO' })
   status: string;
+
+  // ADMIN o USUARIO
+  @Column({ default: 'USUARIO' })
+  role: string;
 }

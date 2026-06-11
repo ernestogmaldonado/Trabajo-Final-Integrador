@@ -13,6 +13,18 @@ export class ApiService {
     return new HttpHeaders({ Authorization: 'Bearer ' + token });
   }
 
+  // arma el query string a partir de un objeto, salteando valores vacios
+  private armarQuery(filtros: any) {
+    const partes: string[] = [];
+    for (const clave of Object.keys(filtros || {})) {
+      const valor = filtros[clave];
+      if (valor !== '' && valor !== null && valor !== undefined) {
+        partes.push(clave + '=' + encodeURIComponent(valor));
+      }
+    }
+    return partes.length ? '?' + partes.join('&') : '';
+  }
+
   login(usuario: string, clave: string) {
     return this.http.post<any>(this.api + '/auth/login', {
       username: usuario,
@@ -20,8 +32,17 @@ export class ApiService {
     });
   }
 
-  getProyectos() {
-    return this.http.get<any[]>(this.api + '/projects', { headers: this.cabeceras() });
+  getProyectos(filtros?: any) {
+    return this.http.get<any>(this.api + '/projects' + this.armarQuery(filtros), {
+      headers: this.cabeceras(),
+    });
+  }
+
+  exportarProyectos(filtros?: any) {
+    return this.http.get(this.api + '/projects/export' + this.armarQuery(filtros), {
+      headers: this.cabeceras(),
+      responseType: 'blob',
+    });
   }
 
   getProyecto(id: number) {
@@ -36,8 +57,17 @@ export class ApiService {
     return this.http.patch(this.api + '/projects/' + id, datos, { headers: this.cabeceras() });
   }
 
-  getClientes() {
-    return this.http.get<any[]>(this.api + '/clients', { headers: this.cabeceras() });
+  getClientes(filtros?: any) {
+    return this.http.get<any>(this.api + '/clients' + this.armarQuery(filtros), {
+      headers: this.cabeceras(),
+    });
+  }
+
+  exportarClientes(filtros?: any) {
+    return this.http.get(this.api + '/clients/export' + this.armarQuery(filtros), {
+      headers: this.cabeceras(),
+      responseType: 'blob',
+    });
   }
 
   getClientesActivos() {
@@ -50,6 +80,12 @@ export class ApiService {
 
   editarCliente(id: number, datos: any) {
     return this.http.patch(this.api + '/clients/' + id, datos, { headers: this.cabeceras() });
+  }
+
+  getHistorial(filtros?: any) {
+    return this.http.get<any>(this.api + '/history' + this.armarQuery(filtros), {
+      headers: this.cabeceras(),
+    });
   }
 
   crearTarea(proyectoId: number, datos: any) {
@@ -66,5 +102,19 @@ export class ApiService {
 
   borrarTarea(id: number) {
     return this.http.delete(this.api + '/tasks/' + id, { headers: this.cabeceras() });
+  }
+
+  // descarga un blob como archivo
+  descargarArchivo(blob: Blob, nombre: string) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = nombre;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  esAdmin() {
+    return localStorage.getItem('role') === 'ADMIN';
   }
 }

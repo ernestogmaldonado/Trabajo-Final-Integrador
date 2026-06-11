@@ -23,11 +23,21 @@ import { ApiService } from './api.service';
     @if (error) {
       <p style="color:red">{{ error }}</p>
     }
-    <br />
+    <hr />
+    <p>
+      Buscar: <input [(ngModel)]="filtroNombre" (input)="filtrar()" placeholder="nombre..." />
+      Estado:
+      <select [(ngModel)]="filtroEstado" (change)="filtrar()">
+        <option value="">Todos</option>
+        <option>ACTIVO</option>
+        <option>BAJA</option>
+      </select>
+      <button (click)="descargarCsv()">Descargar CSV</button>
+    </p>
     <table border="1" cellpadding="6" width="100%">
       <tr>
-        <th>Nombre</th>
-        <th>Estado</th>
+        <th (click)="ordenarPor('name')" style="cursor:pointer">Nombre {{ flecha('name') }}</th>
+        <th (click)="ordenarPor('status')" style="cursor:pointer">Estado {{ flecha('status') }}</th>
         <th></th>
       </tr>
       @for (c of lista; track c.id) {
@@ -51,11 +61,26 @@ import { ApiService } from './api.service';
           }
         </tr>
       }
+      @if (lista.length === 0) {
+        <tr><td colspan="3">Sin resultados</td></tr>
+      }
     </table>
+    <p>
+      <button (click)="irPagina(pagina - 1)" [disabled]="pagina <= 1">Anterior</button>
+      Pagina {{ pagina }} de {{ totalPaginas() }} ({{ total }} clientes)
+      <button (click)="irPagina(pagina + 1)" [disabled]="pagina >= totalPaginas()">Siguiente</button>
+    </p>
   `,
 })
 export class ClientesComponent implements OnInit {
   lista: any[] = [];
+  total = 0;
+  pagina = 1;
+  porPagina = 10;
+  filtroNombre = '';
+  filtroEstado = '';
+  orden = 'name';
+  dir = 'ASC';
   nombreNuevo = '';
   estadoNuevo = 'ACTIVO';
   editId = 0;
@@ -70,8 +95,60 @@ export class ClientesComponent implements OnInit {
     this.cargar();
   }
 
+  private filtros() {
+    return {
+      name: this.filtroNombre,
+      status: this.filtroEstado,
+      sort: this.orden,
+      dir: this.dir,
+      page: this.pagina,
+      limit: this.porPagina,
+    };
+  }
+
   cargar() {
-    this.api.getClientes().subscribe((d) => (this.lista = d));
+    this.api.getClientes(this.filtros()).subscribe((r) => {
+      this.lista = r.data;
+      this.total = r.total;
+    });
+  }
+
+  filtrar() {
+    this.pagina = 1;
+    this.cargar();
+  }
+
+  ordenarPor(campo: string) {
+    if (this.orden === campo) {
+      this.dir = this.dir === 'ASC' ? 'DESC' : 'ASC';
+    } else {
+      this.orden = campo;
+      this.dir = 'ASC';
+    }
+    this.cargar();
+  }
+
+  flecha(campo: string) {
+    if (this.orden !== campo) return '';
+    return this.dir === 'ASC' ? '▲' : '▼';
+  }
+
+  totalPaginas() {
+    return Math.max(1, Math.ceil(this.total / this.porPagina));
+  }
+
+  irPagina(p: number) {
+    this.pagina = p;
+    this.cargar();
+  }
+
+  descargarCsv() {
+    const filtros: any = this.filtros();
+    delete filtros.page;
+    delete filtros.limit;
+    this.api.exportarClientes(filtros).subscribe((blob) => {
+      this.api.descargarArchivo(blob, 'clientes.csv');
+    });
   }
 
   crear() {

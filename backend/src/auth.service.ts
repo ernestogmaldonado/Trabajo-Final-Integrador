@@ -13,12 +13,20 @@ export class AuthService implements OnModuleInit {
     private jwt: JwtService,
   ) {}
 
-  // al arrancar crea el usuario admin
+  // al arrancar crea los usuarios de prueba
   async onModuleInit() {
-    const existe = await this.usuarios.findOne({ where: { username: 'admin' } });
+    await this.crearUsuario('admin', 'admin123', 'ADMIN');
+    await this.crearUsuario('usuario', 'usuario123', 'USUARIO');
+  }
+
+  private async crearUsuario(username: string, clave: string, role: string) {
+    const existe = await this.usuarios.findOne({ where: { username } });
     if (!existe) {
-      const pass = await bcrypt.hash('admin123', 10);
-      await this.usuarios.save({ username: 'admin', password: pass, status: 'ACTIVO' });
+      const pass = await bcrypt.hash(clave, 10);
+      await this.usuarios.save({ username, password: pass, status: 'ACTIVO', role });
+    } else if (existe.role !== role) {
+      existe.role = role;
+      await this.usuarios.save(existe);
     }
   }
 
@@ -33,10 +41,10 @@ export class AuthService implements OnModuleInit {
       throw new UnauthorizedException('Usuario o clave incorrectos');
     }
 
-    const token = this.jwt.sign({ sub: user.id, username: user.username });
+    const token = this.jwt.sign({ sub: user.id, username: user.username, role: user.role });
     return {
       accessToken: token,
-      user: { id: user.id, username: user.username, status: user.status },
+      user: { id: user.id, username: user.username, status: user.status, role: user.role },
     };
   }
 }
