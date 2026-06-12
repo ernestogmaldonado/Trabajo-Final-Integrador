@@ -7,6 +7,8 @@ import { LoginComponent } from './login.component';
 import { ProyectoDetalleComponent } from './proyecto-detalle.component';
 import { ProyectoFormComponent } from './proyecto-form.component';
 import { ProyectosComponent } from './proyectos.component';
+import { EstadisticasComponent } from './estadisticas.component';
+import { TableroTareasComponent } from './tablero-tareas.component';
 
 function estaLogueado() {
   if (localStorage.getItem('token')) {
@@ -22,7 +24,9 @@ export const routes: Routes = [
     component: LayoutComponent,
     canActivate: [estaLogueado],
     children: [
-      { path: '', redirectTo: 'proyectos', pathMatch: 'full' },
+      { path: '', redirectTo: 'estadisticas', pathMatch: 'full' },
+      { path: 'estadisticas', component: EstadisticasComponent },
+      { path: 'tablero-tareas', component: TableroTareasComponent },
       { path: 'proyectos', component: ProyectosComponent },
       { path: 'proyectos/nuevo', component: ProyectoFormComponent },
       { path: 'proyectos/:id/editar', component: ProyectoFormComponent },

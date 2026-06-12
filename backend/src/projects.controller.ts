@@ -34,6 +34,11 @@ export class ProjectsController {
     return this.svc.buscar(query);
   }
 
+  @Get('tasks/board')
+  obtenerTableroTareas() {
+    return this.svc.obtenerTableroTareas();
+  }
+
   @Get('projects/export')
   async exportar(@Query() query: BusquedaProyectos, @Res() res: any) {
     const lista = await this.svc.exportar(query);

@@ -152,6 +152,20 @@ export class ProjectsService {
     return { ok: true };
   }
 
+  async obtenerTableroTareas() {
+    const tareas = await this.tareas.find({
+      relations: { project: true },
+    });
+
+    const tablero = {
+      PENDIENTE: tareas.filter((t) => t.status === 'PENDIENTE'),
+      FINALIZADO: tareas.filter((t) => t.status === 'FINALIZADO'),
+      BAJA: tareas.filter((t) => t.status === 'BAJA'),
+    };
+
+    return tablero;
+  }
+
   private async buscarCliente(clientId?: number | null) {
     if (!clientId) return null;
     const c = await this.clientes.findOne({ where: { id: clientId } });

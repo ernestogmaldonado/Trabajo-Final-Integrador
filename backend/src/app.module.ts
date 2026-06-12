@@ -15,6 +15,8 @@ import { HistoryService } from './history.service';
 import { JwtGuard } from './jwt.guard';
 import { ProjectsController } from './projects.controller';
 import { ProjectsService } from './projects.service';
+import { EstadisticasController } from './estadisticas.controller';
+import { EstadisticasService } from './estadisticas.service';
 
 @Module({
   imports: [
@@ -34,7 +36,7 @@ import { ProjectsService } from './projects.service';
       signOptions: { expiresIn: '8h' },
     }),
   ],
-  controllers: [AuthController, ClientsController, ProjectsController, HistoryController],
-  providers: [AuthService, ClientsService, ProjectsService, HistoryService, JwtGuard],
+  controllers: [AuthController, ClientsController, ProjectsController, HistoryController, EstadisticasController],
+  providers: [AuthService, ClientsService, ProjectsService, HistoryService, JwtGuard, EstadisticasService],
 })
 export class AppModule {}
