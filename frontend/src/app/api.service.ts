@@ -104,6 +104,10 @@ export class ApiService {
     return this.http.delete(this.api + '/tasks/' + id, { headers: this.cabeceras() });
   }
 
+  getEstadisticas() {
+    return this.http.get<any>(this.api + '/estadisticas', { headers: this.cabeceras() });
+  }
+
   // descarga un blob como archivo
   descargarArchivo(blob: Blob, nombre: string) {
     const url = URL.createObjectURL(blob);
