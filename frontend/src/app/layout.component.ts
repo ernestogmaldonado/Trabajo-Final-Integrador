@@ -8,11 +8,11 @@ import { RouterLink, RouterOutlet } from '@angular/router';
   template: `
     <header>
       <b>Gestion de Proyectos</b> - {{ user }}
-      <a routerLink="/estadisticas">Estadísticas</a>
-      <a routerLink="/tablero-tareas">Tablero de Tareas</a>
       <a routerLink="/proyectos">Proyectos</a>
       <a routerLink="/clientes">Clientes</a>
       <a routerLink="/historial">Historial</a>
+      <a routerLink="/estadisticas">Estadísticas</a>
+      <a routerLink="/tablero-tareas">Tablero de Tareas</a>
       <button (click)="salir()">Salir</button>
     </header>
     <main>
